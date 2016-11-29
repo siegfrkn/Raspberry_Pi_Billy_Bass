@@ -1,11 +1,14 @@
 /*
-  Make a DC Motor Move to Sound.
+   Make two DC Motors Move to Sound.
    This example code is in the public domain.
-   Created by Donald Bell, Maker Project Lab (2016).
+   Created by Katrina Siegfried 2016, based on
+   code by Donald Bell, Maker Project Lab (2016).
    Based on Sound to Servo by Cenk Özdemir (2012) 
    and DCMotorTest by Adafruit
 */
-// include the Adafruit motor shield library
+
+
+// include the Adafruit motor shield v2 library
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_MS_PWMServoDriver.h"
@@ -16,72 +19,76 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 // Adafruit_MotorShield AFMS = Adafruit_MotorShield(0x61); 
 
 // Select which 'port' M1, M2, M3 or M4. In this case, M1 for mouth and M2 for tail
-Adafruit_DCMotor *myMotor = AFMS.getMotor(1);
-Adafruit_DCMotor *myOtherMotor = AFMS.getMotor(2);
+Adafruit_DCMotor *mouthMotor = AFMS.getMotor(1); // M1 is mouth motor, 64 kHz
+Adafruit_DCMotor *headtailMotor = AFMS.getMotor(2); // M2 is head/tail motor, 64 kHz
 
 // Some other Variables we need
 int SoundInPin = A0;
-int LedPin = 12; //in case you want an LED to activate while mouth moves
+//int LedPin = 12; //in case you want an LED to activate while mouth moves
 
-// the setup routine runs once when you press reset:
-void setup() {
-  Serial.begin(9600);           // set up Serial library at 9600 bps
-
-
-  AFMS.begin();  // create with the default frequency 1.6KHz
-  //AFMS.begin(1000);  // OR with a different frequency, say 1KHz
+void setup() // the setup routine runs once when you press reset:
+{
   
+  Serial.begin(9600); // set up Serial library baud rate at 9600 bps
+
+  AFMS.begin();  // create motor library with the default frequency 1.6KHz
+
   // Set the speed to start, from 0 (off) to 255 (max speed)
-  myMotor->setSpeed(0); //mouth motor
-  myMotor->run(FORWARD);
-  // turn on motor
-  myMotor->run(RELEASE);
-     pinMode(SoundInPin, INPUT);
-     pinMode(LedPin, OUTPUT);
-  myOtherMotor->setSpeed(0); //tail motor
-  myOtherMotor->run(FORWARD);
-  // turn on motor
-  myOtherMotor->run(RELEASE);
-     pinMode(SoundInPin, INPUT);  
+  mouthMotor->setSpeed(0); // mouth motor not moving
+  mouthMotor->run(FORWARD); // turn on mouth motor
+  mouthMotor->run(RELEASE); // release mouth motor
+  pinMode(SoundInPin, INPUT); // sound from the alexa coming into the jack is INPUT
+
+  headtailMotor->setSpeed(0); // tail motor not moving
+  headtailMotor->run(FORWARD); // turn on mouth motor
+  headtailMotor->run(RELEASE); // release mouth motor
+  pinMode(SoundInPin, INPUT);  // sound from the alexa coming into the jack is INPUT
+
 }
 
-// the loop routine runs over and over again forever:
-void loop() {
-  uint8_t i;
+void loop() // the loop routine runs over and over again forever:
+{
+  uint8_t i; // define i as an integer variable
   
-  // read the input on analog pin 0:
-  int sensorValue = analogRead(SoundInPin);
-// we Map another value of this for LED that can be a integer betwen 0..255 
-  int LEDValue = map(sensorValue,0,512,0,255);
-  // We Map it here down to the possible range of  movement.
-  sensorValue = map(sensorValue,0,512,0,180);
-  // note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings.
-  int MoveDelayValue = map(sensorValue,0,255,0,sensorValue);
+  int sensorValue = analogRead(SoundInPin); // read the input on analog pin 0:
 
-  // maping the same reading a little bit more down to calculate the time your motor gets
-if (sensorValue > 10) { // to cut off some static readings
-   delay(1);  // a static delay to smooth things out...
-// now move the motor 
-   myMotor->run(FORWARD);
-  for (i=140; i<255; i++) {
-    myMotor->setSpeed(i);  
+  sensorValue = map(sensorValue,0,512,0,180); // We Map it here down to the possible range of  movement.
+  // note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings. -Donald Bell
   
+  int MoveDelayValue = map(sensorValue,0,255,0,sensorValue); // map the MoveDelayValue as the max value, not sure where this is used now
+
+//  // Controlling head/tail motor movement
+//   while (sensorValue > 11) // 11 is the threshold at which the head lifts
+//   {
+//     headtailMotor->setSpeed(200); // set the head/tail motor speed to 200 out of range 0 to 255
+//     delay(1); // static delay to smooth things out
+//     headtailMotor->run(FORWARD); // move the head up (could be tail if you wired in opposite configuration)
+//     delay(1); // static delay to smooth things out
+//     //headtailMotor->setSpeed(0); // trying to turn off the goddamend head
+//     headtailMotor->run(RELEASE); // stop moving the head/tail motor
+//     delay(1); // static delay to smooth things out
+//   }
+   
+
+  // Controlling mouth motor movement
+  if (sensorValue > 8) // to cut off some static readings, otherwise the jaw chatters from noise
+  { 
+   delay(1);  // a static delay to smooth things out
+   mouthMotor->run(FORWARD); // now move the motor
+   delay(1);
+   
+   for (i=200; i<255; i++) 
+  {
+    mouthMotor->setSpeed(i);  
+  }
+         
+  //Release control of both motors  
+  mouthMotor->run(RELEASE);
+  //headtailMotor->run(RELEASE);
+  delay(1);
   }
 
-//for (i=200; i!=0; i--) {
-//    myMotor->setSpeed(i);  
-//    delay(10);
-//  }
-  
-  analogWrite(LedPin, sensorValue); 
-         // and do that move in this delay time
-  
-  myMotor->run(RELEASE);
-  myOtherMotor->run(RELEASE);
-  delay(1);
-} // Done.
-   // turn off the led again.
-      analogWrite(LedPin, 0); 
-      // and this repeats all the time.
-}
+headtailMotor->run(RELEASE);
 
+}
+// Done.
