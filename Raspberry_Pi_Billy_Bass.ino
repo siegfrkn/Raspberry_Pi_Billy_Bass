@@ -7,6 +7,14 @@
    and DCMotorTest by Adafruit
 */
 
+/* Things to add as of 11/29/2016:
+   1. intregrate head/tail motor - need 12V power supply
+   2. add filter to smooth out noise
+   3. add billy bass speakers as audio output
+*/
+
+
+
 
 // include the Adafruit motor shield v2 library
 #include <Wire.h>
@@ -50,12 +58,12 @@ void loop() // the loop routine runs over and over again forever:
 {
   uint8_t i; // define i as an integer variable
   
-  int sensorValue = analogRead(SoundInPin); // read the input on analog pin 0:
+  int sensorValue = analogRead(SoundInPin)*1.3; // read the input on analog pin A0 and add a gain of 30%
 
   sensorValue = map(sensorValue,0,512,0,180); // We Map it here down to the possible range of  movement.
   // note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings. -Donald Bell
   
-  int MoveDelayValue = map(sensorValue,0,255,0,sensorValue); // map the MoveDelayValue as the max value, not sure where this is used now
+  int MoveDelayValue = map(sensorValue,0,255,0,sensorValue); // map the MoveDelayValue as the max value, not sure where this is used now*   
 
 //  // Controlling head/tail motor movement
 //   while (sensorValue > 11) // 11 is the threshold at which the head lifts
@@ -71,24 +79,26 @@ void loop() // the loop routine runs over and over again forever:
    
 
   // Controlling mouth motor movement
-  if (sensorValue > 8) // to cut off some static readings, otherwise the jaw chatters from noise
+  if (sensorValue > 12) // to cut off some static readings, otherwise the jaw chatters from noise
   { 
    delay(1);  // a static delay to smooth things out
    mouthMotor->run(FORWARD); // now move the motor
-   delay(1);
+   delay(1); // a static delay to smoothe things out
    
-   for (i=200; i<255; i++) 
+   for (i=140; i<255; i++) // control speed ramping, start at 140, count by 1, until 254 to speed up motor
   {
-    mouthMotor->setSpeed(i);  
+    mouthMotor->setSpeed(i);  // set the motor speed to whatever the value of the integer i is
   }
          
   //Release control of both motors  
-  mouthMotor->run(RELEASE);
-  //headtailMotor->run(RELEASE);
-  delay(1);
+  mouthMotor->run(RELEASE); // stop moving the mouth motor
+  headtailMotor->run(RELEASE); // stop moving the head/tail motor
+  delay(1); // static delay to smooth things out
   }
 
-headtailMotor->run(RELEASE);
+//headtailMotor->run(RELEASE); // trying to stop the head from being crazy
 
 }
-// Done.
+// Done
+
+// Katrina Siegfried 2016
