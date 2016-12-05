@@ -8,17 +8,15 @@
 */
 
 /* Things to note:
-   1. You must wait at least 5 seconds before initiating Alexa commands
+   1. You must wait at least 5 seconds before initiating Alexa commands at start
+   2. Present audo gains, if cases, and interval used for 12V 1A power supply
 */
 
 
 /* Things to add as of 11/29/2016:
-   1. intregrate head/tail motor - need 9V 2A power supply
-   2. add filter to smooth out noise
-   3. add billy bass speakers as audio output
-   4. set if sensorValues based on filtered numbers to adjust for volume?
-   5. How does Pi output volume vs echo dot?
-   6. Normalize volume input more effectively - MoveDelayValue?
+   1. add filter to smooth out noise
+   2. add billy bass speakers as audio output
+   3. How does Pi output volume vs echo dot?
 */
 
 
@@ -37,9 +35,9 @@ Adafruit_DCMotor *mouthMotor = AFMS.getMotor(1); // M1 is mouth motor, 64 kHz
 Adafruit_DCMotor *headtailMotor = AFMS.getMotor(2); // M2 is head/tail motor, 64 kHz
 
 // Define global variables
-int SoundInPin = A0;
-unsigned long previousMillis = 0;
-const long interval = 3000;
+int SoundInPin = A0; // Input coming from Alexa audio in analog pin 0
+unsigned long previousMillis = 0; // This is the starting time for the counter
+const long interval = 3000; // This is the interval used to determine if the head motor should lift again
 
 
 
@@ -65,100 +63,74 @@ void setup() // the setup routine runs once when you press reset:
 
 void loop() // the loop routine runs over and over again forever:
 {
-  uint8_t i; // define i as an integer variable
-  int sensorValue = analogRead(SoundInPin)*4; // read the input on analog pin A0 and add a gain of 30%
-  int MoveDelayValue = analogRead(SoundInPin)*4;
-  sensorValue = map(sensorValue,0,512,0,180); // We Map it here down to the possible range of  movement, note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings. -Donald Bell
-  MoveDelayValue = map(sensorValue,0,512,0,180); // map the MoveDelayValue as the max value, not sure where this is used now*   
+
+  
+  uint8_t i; // Define i as an integer variable for counting mouth movement
+  int sensorValue = analogRead(SoundInPin)*3; // Read the input on analog pin A0 and add a gain of 300%, this is for mouth motor, **GAIN MAY CHANGE WITH CURRENT INPUT**
+  int MoveDelayValue = analogRead(SoundInPin)*3; //Read the input on analog pin A0 and add a gain of 300%, this is for head/tail motor, **GAIN MAY CHANGE WITH CURRENT INPUT**
+  sensorValue = map(sensorValue,0,512,0,180); // Map it here down to the possible range of  movement, note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings. -Donald Bell
+  MoveDelayValue = map(sensorValue,0,512,0,180); // Map it here down to the possible range of  movement, note normally the 512 is 1023 because of analog reading should go so far, but I changed that to get better readings. -Donald Bell 
 
 
-//  // Controlling head/tail motor movement **THIS IS WHAT WORKS**
-//   if (sensorValue > 13) // 11 is the threshold at which the head lifts
-//   {
-//     delay(1);
-//     headtailMotor->setSpeed(100); // set the head/tail motor speed to 200 out of range 0 to 255
-//     delay(1); // static delay to smooth things out
-//     headtailMotor->run(FORWARD); // move the head up (could be tail if you wired in opposite configuration)
-//     delay(5000); // static delay so the head waits long enough
-//     //headtailMotor->setSpeed(0); // trying to turn off the goddamend head
-//     headtailMotor->run(RELEASE); // stop moving the head/tail motor
-//     delay(1); // static delay to smooth things out
-//   }
-
-
-if (MoveDelayValue >= 9) // this is the threshold at which the head lifts WILL BE MOVEDELAYVALUE
-     { 
-     unsigned long currentMillis = millis();
-     Serial.println(MoveDelayValue);
-     unsigned long motorSpeed = 230;
-     if (currentMillis - previousMillis < interval)
+  if (MoveDelayValue >= 9) // This is the threshold at which the head lifts, **THIS VALUE MAY CHANGE WITH CURRENT INPUT**
+  { 
+     unsigned long currentMillis = millis(); // This is the current time elapsed since start of Arduino board
+     Serial.println(MoveDelayValue); // Print the MoveDelayValue to the serial monitor
+     unsigned long motorSpeed = 230; // Assign the motorSpeed to 230, this is presently for the head/tail motor
+     if (currentMillis - previousMillis < interval) // if the time elapsed since the head last moved, or was checked, is less than the interval value
      {
-       headtailMotor->setSpeed(0);
-       headtailMotor->run(BRAKE);
-       Serial.println("Pause the hold");
-       Serial.println(MoveDelayValue);
-       Serial.println(currentMillis);
-       Serial.println(previousMillis);
-       delay(1);
-       headtailMotor->run(BRAKE);
-       delay(1);
-       //delay(2000);
-       previousMillis = currentMillis;
+       headtailMotor->setSpeed(0); // Set the head/tail motor speed to 0
+       headtailMotor->run(BRAKE); // Brake the head/tail motor (stop it in place with minimal resistance)
+       Serial.println("Pause the head"); // Print "Pause the head" to the serial monitor
+       Serial.println(MoveDelayValue); // Print the MoveDelayValue to the serial monitor 
+       Serial.println(currentMillis); // Print the currentMillis to the serial monitor
+       Serial.println(previousMillis); // Print the previous Millis to the serial monitor
+       delay(1);  // Add a static delay to smooth things out
+       previousMillis = currentMillis; // Update the previous time to the current time
      }
      else
      {
-       Serial.println("Move the head");
-       delay(1);
-       //Serial.println(currentMillis);
-       delay(1);
-       headtailMotor->run(RELEASE);
-       delay(1);
-       headtailMotor->setSpeed(motorSpeed); // set the head/tail motor speed to 200 out of range 0 to 255
-       delay(1); // static delay to smooth things out
-       //Serial.println(motorSpeed);
+       Serial.println("Move the head");  // Print "Move the head" to the serial monitor
+       headtailMotor->run(RELEASE); // Release the head/tail motor
+       delay(1); // Add a static delay to smooth things out
+       headtailMotor->setSpeed(motorSpeed); // set the head/tail motor speed to the motorSpeed value
        headtailMotor->run(FORWARD); // move the head up (could be tail if you wired in opposite configuration)
-       delay(350); // static delay so the head waits long enough
-       headtailMotor->setSpeed(0); // trying to turn off the goddamend head
-       headtailMotor->run(BRAKE); // stop moving the head/tail motor
-       Serial.println(MoveDelayValue);
-       Serial.println(currentMillis);
-       Serial.println(previousMillis);
-       //delay(1);
-       delay(500); // static delay to smooth things out
-       //headtailMotor->run(RELEASE);
-       previousMillis = currentMillis;
+       delay(100); // static delay so the head waits long enough
+       headtailMotor->setSpeed(0); // turn off the head movement
+       headtailMotor->run(BRAKE); // Brake, stop moving the head/tail motor
+       Serial.println(MoveDelayValue); // Print the MoveDelay Value to the serial monitor
+       Serial.println(currentMillis); // Print current time to the serial monitor
+       Serial.println(previousMillis); // Print the previous time to the serial monitor
+       delay(500); // static delay to smooth things out and create a short pause
+       previousMillis = currentMillis; // previous time equals current time
      }
 
     // Controlling mouth motor movement
-    if (sensorValue > 11) // to cut off some static readings, otherwise the jaw chatters from noise
+    if (sensorValue > 11) // to cut off some static readings, otherwise the jaw chatters from noise **MAY CHANGE WITH CURRENT INPUT**
     { 
-     delay(1);  // a static delay to smooth things out
-     mouthMotor->run(FORWARD); // now move the motor
-     delay(1); // a static delay to smoothe things out
-     for (i=110; i<255; i++) // control speed ramping, start at 140, count by 1, until 254 to speed up motor
-    {
-      mouthMotor->setSpeed(i);  // set the motor speed to whatever the value of the integer i is
-    }    
-    //Release control of both motors  
-    mouthMotor->run(RELEASE); // stop moving the mouth motor
-    //headtailMotor->run(RELEASE); // stop moving the head/tail motor
-    delay(1); // static delay to smooth things out
+      mouthMotor->run(FORWARD); // now move the motor
+      delay(1); // a static delay to smoothe things out
+      for (i=110; i<255; i++) // control speed ramping, start at 110, count by 1, until 254 to speed up motor
+      {
+        mouthMotor->setSpeed(i);  // set the motor speed to whatever the value of the integer i is
+      }    
+      mouthMotor->run(RELEASE); // stop moving the mouth motor
+      delay(1); // static delay to smooth things out
     }
      
    }
    else
    {
-    //Serial.println(sensorValue);
-    delay(1);
-    headtailMotor->setSpeed(0);
-    delay(1);
-    headtailMotor->run(RELEASE);
-    delay(1);
-    //Serial.println("Motor released ");
+    //Serial.println(sensorValue); // Print the sensorValue to the serial monitor
+    delay(1); // Add a static delay to smooth things out
+    headtailMotor->setSpeed(0); // Set the head/tail motor to zero, stop it from moving forward
+    headtailMotor->run(RELEASE); // Release the head/tail motor
+    delay(1); // Add a static delay to smooth things out
+    //Serial.println("Motor released "); // Print "Motor released" to the serial monitor
    }
 
 
-
+// //LEAVE COMMENTED OUT FOR NOW, BUT PROBABLY DONT NEED THIS, CAN EVENTUALLY DELETE
 //  // Controlling mouth motor movement
 //  if (sensorValue > 11) // to cut off some static readings, otherwise the jaw chatters from noise
 //  { 
@@ -174,10 +146,10 @@ if (MoveDelayValue >= 9) // this is the threshold at which the head lifts WILL B
 //  //headtailMotor->run(RELEASE); // stop moving the head/tail motor
 //  delay(1); // static delay to smooth things out
 //  }
-
-//headtailMotor->run(RELEASE); // trying to stop the head from being crazy
-
 }
+
+
+
 // Done
 
 // Katrina Siegfried 2016
