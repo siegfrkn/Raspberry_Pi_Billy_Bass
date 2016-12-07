@@ -1,11 +1,13 @@
 /*
    Make two DC Motors Move to Sound.
    This example code is in the public domain.
+   Based on Blink without Delay by Scott Fitzgerald (2013).
    Created by Katrina Siegfried 2016, based on
    code by Donald Bell, Maker Project Lab (2016).
    Based on Sound to Servo by Cenk Özdemir (2012) 
    and DCMotorTest by Adafruit
 */
+
 
 /* Things to note:
    1. You must wait at least 5 seconds before initiating Alexa commands at start
@@ -37,7 +39,7 @@ Adafruit_DCMotor *headtailMotor = AFMS.getMotor(2); // M2 is head/tail motor, 64
 // Define global variables
 int SoundInPin = A0; // Input coming from Alexa audio in analog pin 0
 unsigned long previousMillis = 0; // This is the starting time for the counter
-const long interval = 3000; // This is the interval used to determine if the head motor should lift again
+const long interval = 4000; // This is the interval used to determine if the head motor should lift again
 
 
 
@@ -95,7 +97,7 @@ void loop() // the loop routine runs over and over again forever:
        delay(1); // Add a static delay to smooth things out
        headtailMotor->setSpeed(motorSpeed); // set the head/tail motor speed to the motorSpeed value
        headtailMotor->run(FORWARD); // move the head up (could be tail if you wired in opposite configuration)
-       delay(100); // static delay so the head waits long enough
+       delay(200); // static delay so the head waits long enough
        headtailMotor->setSpeed(0); // turn off the head movement
        headtailMotor->run(BRAKE); // Brake, stop moving the head/tail motor
        Serial.println(MoveDelayValue); // Print the MoveDelay Value to the serial monitor
