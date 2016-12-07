@@ -91,40 +91,40 @@ void loop() // the loop routine runs over and over again forever:
      else
      {
        Serial.println("Move the head");  // Print "Move the head" to the serial monitor
-       headtailMotor->run(RELEASE); // Release the head/tail motor
+       //headtailMotor->run(RELEASE); // Release the head/tail motor
        delay(1); // Add a static delay to smooth things out
        headtailMotor->setSpeed(motorSpeed); // set the head/tail motor speed to the motorSpeed value
        headtailMotor->run(FORWARD); // move the head up (could be tail if you wired in opposite configuration)
-       delay(100); // static delay so the head waits long enough
+       delay(150); // static delay so the head waits long enough
        headtailMotor->setSpeed(0); // turn off the head movement
        headtailMotor->run(BRAKE); // Brake, stop moving the head/tail motor
        Serial.println(MoveDelayValue); // Print the MoveDelay Value to the serial monitor
        Serial.println(currentMillis); // Print current time to the serial monitor
        Serial.println(previousMillis); // Print the previous time to the serial monitor
-       delay(500); // static delay to smooth things out and create a short pause
-       previousMillis = currentMillis; // previous time equals current time
-     }
+       delay(100); // static delay to smooth things out and create a short pause
+       previousMillis = currentMillis; // Update the previous time to the current time
+    }
 
     // Controlling mouth motor movement
     if (sensorValue > 11) // to cut off some static readings, otherwise the jaw chatters from noise **MAY CHANGE WITH CURRENT INPUT**
     { 
       mouthMotor->run(FORWARD); // now move the motor
       delay(1); // a static delay to smoothe things out
-      for (i=110; i<255; i++) // control speed ramping, start at 110, count by 1, until 254 to speed up motor
+      for (i=150; i<255; i++) // control speed ramping, start at 150, count by 1, until 254 to speed up motor
       {
         mouthMotor->setSpeed(i);  // set the motor speed to whatever the value of the integer i is
       }    
       mouthMotor->run(RELEASE); // stop moving the mouth motor
       delay(1); // static delay to smooth things out
     }
-     
+ 
    }
    else
    {
     //Serial.println(sensorValue); // Print the sensorValue to the serial monitor
     delay(1); // Add a static delay to smooth things out
     headtailMotor->setSpeed(0); // Set the head/tail motor to zero, stop it from moving forward
-    headtailMotor->run(RELEASE); // Release the head/tail motor
+    headtailMotor->run(BRAKE); // Release the head/tail motor
     delay(1); // Add a static delay to smooth things out
     //Serial.println("Motor released "); // Print "Motor released" to the serial monitor
    }
@@ -146,8 +146,9 @@ void loop() // the loop routine runs over and over again forever:
 //  //headtailMotor->run(RELEASE); // stop moving the head/tail motor
 //  delay(1); // static delay to smooth things out
 //  }
-}
 
+
+}
 
 
 // Done
